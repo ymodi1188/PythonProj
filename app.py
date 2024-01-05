@@ -1,18 +1,52 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import cv2
 import numpy as np
 from PIL import Image
 import io
+import random
+from datetime import datetime
+from sqlalchemy import create_engine, Column, Integer, DateTime, LargeBinary
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+import os
 
 app = Flask(__name__)
+image_dir = 'images'  # Change this to the desired directory name
+os.makedirs(image_dir, exist_ok=True)
 
+
+
+
+def get_image_filename():
+    now = datetime.now()
+    timestamp = now.strftime("%Y%m%d%H%M%S")
+    return f"{image_dir}/{timestamp}.jpg"
 def analyze_frame(frame):
-    # This function should analyze the frame and return the mood
-    # For now, it's a placeholder that always returns "Happy"
-    return "Happy"
-from flask import Flask, render_template
+    # Perform face detection here and store face images in the database
+    # This function should return the mood, but for now, it's a placeholder that always returns "Happy"
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-app = Flask(__name__)
+    if len(faces) > 0:
+        # Store a random face image in the database
+        random_face = random.choice(faces)
+        x, y, w, h = random_face
+        face_roi = frame[y:y + h, x:x + w]
+
+        # Convert the face image to bytes
+        _, buffer = cv2.imencode('.jpg', face_roi)
+        face_image_data = buffer.tobytes()
+        print("face detected")
+        image_filename = get_image_filename()
+        cv2.imwrite(image_filename, face_roi)
+        print(f"Saved face image as {image_filename}")
+            
+        print("face added")
+        # Store the face image in the database
+
+    return "Happy"
 
 @app.route('/')
 def index():
